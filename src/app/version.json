@@ -1,0 +1,21 @@
+{
+ "packageName": "com.motoraa.aafranchise",
+ "latestVersionCode": 6,
+ "minVersionCode": 1,
+ "latestVersionName": "0.1.5",
+ "playUrl": "https://play.google.com/store/apps/details?id=com.motoraa.aafranchise",
+ "notices": [
+  {
+   "id": "welcome-1",
+   "at": "2026-11-02",
+   "title": { "th": "ยินดีต้อนรับ", "en": "Welcome", "ko": "환영해요", "zh": "欢迎", "hi": "स्वागत है" },
+   "body": {
+    "th": "นี่คือรุ่นทดสอบแรกของแอปข้อมูลแฟรนไชส์ในประเทศไทย ข้อมูลรวบรวมจากแหล่งสาธารณะและอาจล้าสมัย โปรดยืนยันกับเจ้าของแบรนด์ก่อนลงทุน หากพบปัญหา ส่งความคิดเห็นได้ที่เมนู",
+    "en": "This is the first test build of the Thailand franchise guide. Data is collected from public sources and may be out of date, so confirm with the brand owner before you invest. If something breaks, send feedback from the menu.",
+    "ko": "태국 프랜차이즈 가이드의 첫 테스트 버전이에요. 데이터는 공개 자료에서 모은 것이라 최신이 아닐 수 있으니, 투자 전에 꼭 브랜드 본사에 확인하세요. 문제가 있으면 메뉴에서 피드백을 보내 주세요.",
+    "zh": "这是泰国特许经营指南的首个测试版本。数据来自公开资料，可能已过时，投资前请务必向品牌方确认。如有问题，请通过菜单发送反馈。",
+    "hi": "यह थाईलैंड फ्रेंचाइज़ गाइड का पहला टेस्ट बिल्ड है। डेटा सार्वजनिक स्रोतों से लिया गया है और पुराना हो सकता है, इसलिए निवेश से पहले ब्रांड मालिक से पुष्टि करें। कोई समस्या हो तो मेनू से फ़ीडबैक भेजें।"
+   }
+  }
+ ]
+}
