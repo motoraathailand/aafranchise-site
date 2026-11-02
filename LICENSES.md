@@ -1,4 +1,4 @@
-# Third-party licences (aacalc-site)
+# Third-party licences (aafranchise-site)
 - Icons: Lucide (https://lucide.dev), ISC licence; a few icons derive from Feather (MIT). Inlined as SVG in `scripts/build.mjs`.
 - Fonts (IBM Plex Sans, IBM Plex Sans Thai): SIL Open Font License 1.1, files in `src/assets/fonts`. Korean / Chinese / Hindi use the phone's own fonts.
 - QR code: qrcode-generator (MIT), `scripts/qrcode.mjs`.
