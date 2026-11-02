@@ -8,7 +8,7 @@
   "installUrl": "https://play.google.com/store/apps/details?id=com.motoraa.aafranchise",
   "contactEmail": "motoraathailand@gmail.com",
   "operator": "Pornnarai Tananchai",
-  "policyDate": "2026-11-02",
+  "policyDate": "2026-11-03",
   "optInLive": true,
   "_optInLive": "false = the Play opt-in/install links are not live yet: steps 2-3 on /join are dimmed and a note says they open when testing starts (step 1, the shared group, always works). Set true as soon as the closed test is published (Play Console > Testing > Closed testing > 'Available to testers'), then rebuild + push."
 }
