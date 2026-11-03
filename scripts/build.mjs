@@ -198,6 +198,7 @@ ${FOOTER(I, '')}`;
 const priv = legal({ file: 'privacy.html', titleKey: 'privacyTitle', content: C.PRIVACY });
 const del = legal({ file: 'delete.html', titleKey: 'deleteTitle', content: C.DELETE });
 // ---- write ----
+const KEEP = path.join(OUT, 'data'), KEEP_TMP = path.join(OUT, '..', '.keep-data-' + process.pid); const hadData = fs.existsSync(KEEP); if (hadData) fs.renameSync(KEEP, KEEP_TMP); // docs/data/ (brand data JSON for the app) is published by the app repo's scripts/weekly-refresh.sh, not generated here: keep it
 fs.rmSync(OUT, { recursive: true, force: true }); fs.mkdirSync(path.join(OUT, 'assets'), { recursive: true }); fs.mkdirSync(path.join(OUT, 'about'), { recursive: true });
 const W = (f, s) => fs.writeFileSync(path.join(OUT, f), s);
 const LD = { '@context': 'https://schema.org', '@type': 'MobileApplication', name: 'AA Franchise', alternateName: 'AA Franchise – เปิดร้านดี', applicationCategory: 'BusinessApplication', operatingSystem: 'Android 7.0+', inLanguage: L, description: I.en.desc, url: SITE + '/', image: SITE + '/assets/img/og.jpg', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, author: { '@type': 'Person', name: cfg.operator } };
@@ -215,4 +216,5 @@ for (const f of ['site.css', 'site.js', 'join.js', 'icon.svg', 'motion.css', 'mo
 fs.mkdirSync(path.join(OUT, 'app'), { recursive: true }); for (const f of ['version.json']) { JSON.parse(fs.readFileSync(path.join(SRC, 'app', f), 'utf8')); fs.copyFileSync(path.join(SRC, 'app', f), path.join(OUT, 'app', f)); }   // the AA Franchise app reads these two files (in-app update notice + notices/changelog)
 fs.cpSync(path.join(SRC, 'assets/video'), path.join(OUT, 'assets/video'), { recursive: true }); W('assets/site.webmanifest', JSON.stringify({ name: 'AA Franchise', short_name: 'AA Franchise', start_url: './', display: 'browser', background_color: '#2a0a1a', theme_color: '#2a0a1a', icons: [{ src: 'img/icon-192.png', sizes: '192x192', type: 'image/png' }] }) + '\n');
 fs.cpSync(path.join(SRC, 'assets/fonts'), path.join(OUT, 'assets/fonts'), { recursive: true }); fs.cpSync(path.join(SRC, 'assets/img'), path.join(OUT, 'assets/img'), { recursive: true });
+if (hadData) fs.renameSync(KEEP_TMP, KEEP);
 console.log(`built docs/: 3 pages x ${L.length} languages (${L.join(', ')}); optInLive=${live}${process.env.OPTIN_LIVE ? ' (env override)' : ''}; policy date ${cfg.policyDate}`);
