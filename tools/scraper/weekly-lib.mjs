@@ -34,7 +34,7 @@ export function sanity(prev, next, ctx = {}) {
   if (prev && prev.meta && next.meta && prev.meta.asofMax && next.meta.asofMax && next.meta.asofMax < prev.meta.asofMax) errs.push(`asofMax went backwards: ${prev.meta.asofMax} -> ${next.meta.asofMax}`);
   return errs;
 }
-export function makeMeta(next, jsonText) {
+export function makeMeta(next, jsonText, checkedAt = null) {
   const m = next.meta;
-  return { schema: 1, version: m.version, count: next.brands.length, generatedAt: m.generatedAt, asofMin: m.asofMin || null, asofMax: m.asofMax || null, bytes: Buffer.byteLength(jsonText), sha256: createHash('sha256').update(jsonText).digest('hex') };
+  return { schema: 1, version: m.version, count: next.brands.length, generatedAt: m.generatedAt, asofMin: m.asofMin || null, asofMax: m.asofMax || null, bytes: Buffer.byteLength(jsonText), sha256: createHash('sha256').update(jsonText).digest('hex'), ...(checkedAt ? { checkedAt } : {}) }; // checkedAt = 마지막으로 점검한 시각(데이터가 안 바뀐 주에도 갱신되는 heartbeat; version 은 그대로)
 }

@@ -1,7 +1,9 @@
 name: Weekly brand data refresh
 
 # Re-scrapes ThaiFranchiseCenter (politely: robots.txt, 1.6 s delay, identifying User-Agent), checks the result and,
-# only if the checks pass AND the data changed, commits docs/data/brands.json + meta.json to main (GitHub Pages serves them).
+# if the checks pass, commits to main (GitHub Pages serves docs/): new docs/data/brands.json + meta.json (new version) when the data changed,
+# otherwise only a heartbeat (meta.json 'checkedAt'; version unchanged so apps do not re-download). The weekly commit also keeps the repo active,
+# so GitHub does not disable the schedule after 60 days of inactivity. If a check fails the job fails and nothing is committed.
 # Takes about 30 minutes (698 pages). Run it by hand from Actions > "Weekly brand data refresh" > Run workflow (tick "force" to publish even if nothing changed).
 on:
   schedule:
@@ -36,26 +38,29 @@ jobs:
           FORCE: ${{ inputs.force }}
         run: node tools/weekly-refresh.mjs
       - name: Commit and push
-        if: steps.refresh.outputs.changed == 'true'
+        if: steps.refresh.outputs.heartbeat == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/data
+          git diff --cached --quiet && { echo "nothing to commit"; exit 0; }
           git commit -m "${{ steps.refresh.outputs.message }}"
           git pull --rebase -q origin main
           git push origin HEAD:main
-      - name: Verify the live URL serves the new version
-        if: steps.refresh.outputs.changed == 'true'
+      - name: Verify the live URL serves the result
+        if: steps.refresh.outputs.heartbeat == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           WANT: ${{ steps.refresh.outputs.version }}
           COUNT: ${{ steps.refresh.outputs.count }}
+          CHK: ${{ steps.refresh.outputs.checkedAt }}
+          CHANGED: ${{ steps.refresh.outputs.changed }}
         run: |
           BASE="https://motoraathailand.github.io/aafranchise-site/data"
           for i in $(seq 1 40); do
-            v=$(curl -fsS "$BASE/meta.json?cb=$RANDOM$i" | python3 -c 'import sys,json;print(json.load(sys.stdin)["version"])' 2>/dev/null || echo none)
-            echo "try $i: live meta version = $v (want $WANT)"
-            if [ "$v" = "$WANT" ]; then
+            m=$(curl -fsS "$BASE/meta.json?cb=$RANDOM$i" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d["version"],d.get("checkedAt",""))' 2>/dev/null || echo "none")
+            echo "try $i: live meta = $m (want $WANT $CHK)"
+            if [ "$m" = "$WANT $CHK" ]; then
               curl -fsS -D /tmp/h "$BASE/brands.json?cb=$RANDOM" -o /tmp/b.json
               python3 - <<'PY'
           import json, os
@@ -63,11 +68,11 @@ jobs:
           assert j['meta']['version'] == int(os.environ['WANT']) and len(j['brands']) == int(os.environ['COUNT']), 'live brands.json mismatch'
           hdr = open('/tmp/h').read().lower()
           assert 'access-control-allow-origin: *' in hdr, 'CORS header missing'
-          print('live OK:', j['meta']['version'], len(j['brands']), 'brands, CORS *')
+          print('live OK:', j['meta']['version'], len(j['brands']), 'brands, CORS *, data changed =', os.environ['CHANGED'])
           PY
               exit 0
             fi
             if [ "$i" = 8 ]; then echo "asking GitHub Pages to build"; gh api -X POST "repos/${{ github.repository }}/pages/builds" >/dev/null || true; fi
             sleep 20
           done
-          echo "::error::live URL did not serve version $WANT within ~13 minutes"; exit 1
+          echo "::error::live URL did not serve version $WANT / checkedAt $CHK within ~13 minutes"; exit 1

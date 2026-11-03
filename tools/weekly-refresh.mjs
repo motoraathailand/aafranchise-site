@@ -2,8 +2,8 @@
 //  1) polite fresh scrape of ThaiFranchiseCenter (robots.txt first, 1.6 s + jitter between requests, identifying User-Agent, backoff; every page re-fetched, no cache is reused), one retry pass for pages that failed
 //  2) rebuild brands.json in a temp file with meta.version = max(YYYYMMDD, previous + 1)
 //  3) sanity checks (same validation the app applies + count/coverage/problem/stale limits); any failure => exit 1, nothing written
-//  4) if content changed (fetch timestamps ignored) or --force: write docs/data/brands.json + docs/data/meta.json. The workflow then commits and pushes.
-// Writes GITHUB_OUTPUT (changed, version) and GITHUB_STEP_SUMMARY when present. Exit: 0 ok (changed or not) · 1 checks failed · 2 scrape failed.
+//  4) if content changed (fetch timestamps ignored) or --force: write docs/data/brands.json + docs/data/meta.json (new version). Otherwise only meta.json 'checkedAt' is refreshed (heartbeat; version unchanged). The workflow then commits and pushes.
+// Writes GITHUB_OUTPUT (changed, heartbeat, version, count, checkedAt, message) and GITHUB_STEP_SUMMARY when present. Exit: 0 ok (changed or not) · 1 checks failed · 2 scrape failed.
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,8 +35,19 @@ if (errs.length) die(1, 'Sanity checks failed:\n' + errs.map((e) => '- ' + e).jo
 const d = diffData(prev, next); const changed = d.any || FORCE;
 const list = (a) => (a.length ? ` (${a.slice(0, 10).join(', ')}${a.length > 10 ? ', …' : ''})` : '');
 summaryMd(`### Weekly brand data refresh\n- brands total: **${next.brands.length}** (was ${prev.brands.length})\n- added: ${d.added.length}${list(d.added)}\n- removed: ${d.removed.length}${list(d.removed)}\n- changed: ${d.changed.length}\n- version: ${prev.meta.version} → **${changed ? next.meta.version : prev.meta.version + ' (unchanged)'}**\n- as-of: ${next.meta.asofMin} ~ ${next.meta.asofMax}\n- pages not refreshed: ${stale}/${ids.length}; parse problems: ${bs.problems}\n- published: **${changed && !DRY ? 'yes' : 'no'}**${!d.any && FORCE ? ' (forced; no content change)' : ''}\n- runtime: ${((Date.now() - t0) / 60000).toFixed(1)} min`);
-if (!changed || DRY) { out('changed', 'false'); process.exit(0); }
+const checkedAt = new Date().toISOString(); const metaFile = join(DOCS, 'meta.json');
+if (!changed || DRY) {
+  out('changed', 'false');
+  if (!DRY) { // heartbeat: only meta.json 'checkedAt' changes (keeps the repo active so GitHub does not disable the schedule); version/count/sha256 stay, so apps do not re-download
+    const ptext = existsSync(prevFile) ? readFileSync(prevFile, 'utf8') : null; if (!ptext) process.exit(0);
+    const old = existsSync(metaFile) ? readJson(metaFile) : makeMeta(prev, ptext);
+    writeFileSync(metaFile, JSON.stringify({ ...old, checkedAt }, null, 1) + '\n');
+    out('heartbeat', 'true'); out('version', old.version); out('count', old.count); out('checkedAt', checkedAt);
+    out('message', `Weekly check OK, brand data unchanged (v${old.version}, ${old.count} brands): heartbeat ${checkedAt.slice(0, 10)}`);
+  }
+  process.exit(0);
+}
 const text = readFileSync(NEXT, 'utf8'); mkdirSync(DOCS, { recursive: true });
-writeFileSync(join(DOCS, 'brands.json'), text); writeFileSync(join(DOCS, 'meta.json'), JSON.stringify(makeMeta(next, text), null, 1) + '\n');
-out('changed', 'true'); out('version', next.meta.version); out('count', next.brands.length);
+writeFileSync(join(DOCS, 'brands.json'), text); writeFileSync(metaFile, JSON.stringify(makeMeta(next, text, checkedAt), null, 1) + '\n');
+out('changed', 'true'); out('heartbeat', 'true'); out('version', next.meta.version); out('count', next.brands.length); out('checkedAt', checkedAt);
 out('message', `Brand data v${next.meta.version}: ${next.brands.length} brands (+${d.added.length} -${d.removed.length} ~${d.changed.length}), as of ${next.meta.asofMax}`);
