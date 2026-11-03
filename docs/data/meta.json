@@ -1,0 +1,10 @@
+{
+ "schema": 1,
+ "version": 20261103,
+ "count": 698,
+ "generatedAt": "2026-11-03T14:19:47.120Z",
+ "asofMin": "2020-01-20",
+ "asofMax": "2026-11-03",
+ "bytes": 4228776,
+ "sha256": "284c9b5d103d5478a9ec0cfe0ee84ea01d3b4f9a6051323403a64de1d96c9a06"
+}
