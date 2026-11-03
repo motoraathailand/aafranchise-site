@@ -1,0 +1,73 @@
+name: Weekly brand data refresh
+
+# Re-scrapes ThaiFranchiseCenter (politely: robots.txt, 1.6 s delay, identifying User-Agent), checks the result and,
+# only if the checks pass AND the data changed, commits docs/data/brands.json + meta.json to main (GitHub Pages serves them).
+# Takes about 30 minutes (698 pages). Run it by hand from Actions > "Weekly brand data refresh" > Run workflow (tick "force" to publish even if nothing changed).
+on:
+  schedule:
+    - cron: '0 3 * * 1'   # every Monday 03:00 UTC (10:00 Thailand)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Publish even if the content did not change (bumps meta.version)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: brand-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Scrape, check, build
+        id: refresh
+        env:
+          FORCE: ${{ inputs.force }}
+        run: node tools/weekly-refresh.mjs
+      - name: Commit and push
+        if: steps.refresh.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data
+          git commit -m "${{ steps.refresh.outputs.message }}"
+          git pull --rebase -q origin main
+          git push origin HEAD:main
+      - name: Verify the live URL serves the new version
+        if: steps.refresh.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WANT: ${{ steps.refresh.outputs.version }}
+          COUNT: ${{ steps.refresh.outputs.count }}
+        run: |
+          BASE="https://motoraathailand.github.io/aafranchise-site/data"
+          for i in $(seq 1 40); do
+            v=$(curl -fsS "$BASE/meta.json?cb=$RANDOM$i" | python3 -c 'import sys,json;print(json.load(sys.stdin)["version"])' 2>/dev/null || echo none)
+            echo "try $i: live meta version = $v (want $WANT)"
+            if [ "$v" = "$WANT" ]; then
+              curl -fsS -D /tmp/h "$BASE/brands.json?cb=$RANDOM" -o /tmp/b.json
+              python3 - <<'PY'
+          import json, os
+          j = json.load(open('/tmp/b.json'))
+          assert j['meta']['version'] == int(os.environ['WANT']) and len(j['brands']) == int(os.environ['COUNT']), 'live brands.json mismatch'
+          hdr = open('/tmp/h').read().lower()
+          assert 'access-control-allow-origin: *' in hdr, 'CORS header missing'
+          print('live OK:', j['meta']['version'], len(j['brands']), 'brands, CORS *')
+          PY
+              exit 0
+            fi
+            if [ "$i" = 8 ]; then echo "asking GitHub Pages to build"; gh api -X POST "repos/${{ github.repository }}/pages/builds" >/dev/null || true; fi
+            sleep 20
+          done
+          echo "::error::live URL did not serve version $WANT within ~13 minutes"; exit 1
