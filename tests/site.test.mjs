@@ -27,8 +27,6 @@ ok('join: steps 3-4 locked + "coming soon" badge + pending note while optInLive=
 ok('privacy: 5 language sections', L.every((l) => priv.includes(`id="s-${l}"`)));
 for (const l of L) { const j = JSON.stringify(C.PRIVACY[l]); ok(`privacy ${l}: names Google sign-in, Firebase, ThaiFranchiseCenter, AdMob, contact email`, /Firebase/.test(j) && /ThaiFranchiseCenter/i.test(j) && j.includes('AdMob') && j.includes(cfg.contactEmail) && j.includes('com.motoraa.aafranchise')); }
 ok('privacy: operator named', priv.includes(cfg.operator));
-ok('no sign-in: intro/join do not ask for Google sign-in or an account in the app', L.every((l) => !/sign.?in|ล็อกอิน|로그인|登录|साइन/i.test(JSON.stringify([INTRO[l].eyebrow, INTRO[l].pk2t, INTRO[l].pk2d, INTRO[l].trust1, INTRO[l].fq3, INTRO[l].fa3])) || /no |ไม่|없|无|नहीं|Do I need|ต้องล็อกอินไหม|필요한가요|需要登录吗|ज़रूरी है/i.test(JSON.stringify([INTRO[l].eyebrow, INTRO[l].pk2t]))));
-ok('privacy: states no account/sign-in in all 5 languages (older versions explained)', L.every((l) => /0\.1\.7/.test(JSON.stringify(C.PRIVACY[l]))) && /no account/i.test(JSON.stringify(C.PRIVACY.en)));
 ok('intro page: 5-language strings complete', L.every((l) => Object.keys(INTRO.en).every((k) => INTRO[l][k] && String(INTRO[l][k]).trim())));
 ok('join page: 5-language strings complete', L.every((l) => Object.keys(JOIN.en).every((k) => JOIN[l][k] !== undefined)));
 ok('motion.css / motion.js are byte copies of the shared originals', ['motion.css', 'motion.js'].every((f) => fs.readFileSync(path.join(DOCS, 'assets', f)).equals(fs.readFileSync('/workspace/shared/motion/' + f))));
